@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Pacientes{% endblock %}
+
+{% block content %}
+
+<!-- 1. Bloco de mensagens adicionado logo abaixo do block content -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+    <h2>Pacientes</h2>
+
+    <!-- 2. Botão de Novo Paciente -->
+    <a href="{% url 'pacientes:criar' %}" class="btn btn-primary">
+    + Novo Paciente
+    </a>
+
+</div>
+
+<form method="get" class="mb-3">
+
+    <input
+        class="form-control"
+        type="text"
+        name="busca"
+        placeholder="Pesquisar paciente..."
+        value="{{ busca }}"
+    >
+
+</form>
+
+<div class="card">
+
+    <div class="card-body">
+
+        <table class="table table-hover">
+
+            <thead>
+
+                <tr>
+                    <th>Nome</th>
+                    <th>CPF</th>
+                    <th>Telefone</th>
+                    <th>Status</th>
+                    <!-- 3. Nova coluna de Ações no cabeçalho -->
+                    <th>Ações</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for paciente in pacientes %}
+
+                <tr>
+
+                    <td>{{ paciente.nome }}</td>
+                    <td>{{ paciente.cpf }}</td>
+                    <td>{{ paciente.telefone }}</td>
+                    <td>
+
+                        {% if paciente.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                        {% endif %}
+
+                    </td>
+                    <!-- 3. Célula com o botão de Editar para cada paciente -->
+                    <td>
+                        <a
+                            href="{% url 'pacientes:editar' paciente.id %}"
+                            class="btn btn-sm btn-outline-primary"
+                        >
+                            Editar
+                        </a>
+                    </td>
+
+                </tr>
+
+                {% empty %}
+
+                <tr>
+
+                    <!-- Colspan ajustado para 5 colunas -->
+                    <td colspan="5" class="text-center">
+                        Nenhum paciente cadastrado.
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endblock %}
