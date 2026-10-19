@@ -1,0 +1,37 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Financeiro | Consultório{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Financeiro</h2>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="text-muted">Total de cobranças</h5>
+                    <h3>R$ {{ total_contas|floatformat:2 }}</h3>
+                    <p class="mb-0">Valores cadastrados para receber dos pacientes.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="text-muted">Total de despesas</h5>
+                    <h3>R$ {{ total_despesas|floatformat:2 }}</h3>
+                    <p class="mb-0">Despesas cadastradas do consultório.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info mt-4">
+        <strong>Próximo passo:</strong> implementar o cadastro de contas a
+        receber, parcelas, recebimentos e despesas.
+    </div>
+</div>
+{% endblock %}
