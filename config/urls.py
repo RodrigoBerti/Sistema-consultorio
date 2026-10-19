@@ -11,6 +11,7 @@ def inicio(request):
         <ul>
             <li><a href="/admin/">Administração</a></li>
             <li><a href="/pacientes/">Pacientes</a></li>
+            <li><a href="/financeiro/">Financeiro</a></li>
         </ul>
     """)
 
@@ -19,4 +20,5 @@ urlpatterns = [
     path('', inicio, name='inicio'),
     path('admin/', admin.site.urls),
     path('pacientes/', include('pacientes.urls')),
+    path('financeiro/', include('financeiro.urls')),
 ]
