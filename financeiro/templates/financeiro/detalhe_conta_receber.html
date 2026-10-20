@@ -1,0 +1,148 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Detalhes da cobrança | Consultório{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-3">Detalhes da cobrança</h2>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <p><strong>Paciente:</strong> {{ conta.paciente.nome }}</p>
+            <p><strong>Descrição:</strong> {{ conta.descricao }}</p>
+            <p><strong>Tipo:</strong> {{ conta.get_tipo_display }}</p>
+            <p>
+                <strong>Valor total:</strong>
+                R$ {{ conta.valor_total|floatformat:2 }}
+            </p>
+            <p>
+                <strong>Total recebido:</strong>
+                R$ {{ conta.total_recebido|floatformat:2 }}
+            </p>
+            <p>
+                <strong>Saldo devedor:</strong>
+                R$ {{ conta.saldo_devedor|floatformat:2 }}
+            </p>
+
+            {% if not conta.parcelas.exists %}
+                <a href="{% url 'financeiro:gerar_parcelas' conta.id %}"
+                   class="btn btn-primary">
+                    Gerar parcelas
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <h4 class="mb-3">Parcelas</h4>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Parcela</th>
+                            <th>Vencimento</th>
+                            <th>Valor</th>
+                            <th>Recebido</th>
+                            <th>Saldo</th>
+                            <th>Situação</th>
+                            <th>Registrar recebimento</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for parcela in conta.parcelas.all %}
+                            <tr>
+                                <td>{{ parcela.numero }}</td>
+                                <td>{{ parcela.data_vencimento|date:"d/m/Y" }}</td>
+                                <td>R$ {{ parcela.valor|floatformat:2 }}</td>
+                                <td>R$ {{ parcela.total_recebido|floatformat:2 }}</td>
+                                <td>R$ {{ parcela.saldo_devedor|floatformat:2 }}</td>
+                                <td>
+                                    {% if parcela.saldo_devedor <= 0 %}
+                                        <span class="badge bg-success">Paga</span>
+                                    {% elif parcela.total_recebido > 0 %}
+                                        <span class="badge bg-info">Parcial</span>
+                                    {% elif parcela.data_vencimento < hoje %}
+                                        <span class="badge bg-danger">Vencida</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pendente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if parcela.saldo_devedor > 0 %}
+                                        <form method="post"
+                                              action="{% url 'financeiro:registrar_recebimento' parcela.id %}">
+                                            {% csrf_token %}
+
+                                            <input type="number"
+                                                   name="valor"
+                                                   class="form-control form-control-sm mb-2"
+                                                   min="0.01"
+                                                   max="{{ parcela.saldo_devedor }}"
+                                                   step="0.01"
+                                                   placeholder="Valor"
+                                                   required>
+
+                                            <input type="date"
+                                                   name="data_recebimento"
+                                                   class="form-control form-control-sm mb-2"
+                                                   value="{{ hoje|date:'Y-m-d' }}"
+                                                   required>
+
+                                            <select name="forma_pagamento"
+                                                    class="form-select form-select-sm mb-2"
+                                                    required>
+                                                <option value="">Forma de pagamento</option>
+                                                <option value="DINHEIRO">Dinheiro</option>
+                                                <option value="PIX">Pix</option>
+                                                <option value="DEBITO">Cartão de débito</option>
+                                                <option value="CREDITO">Cartão de crédito</option>
+                                                <option value="TRANSFERENCIA">Transferência</option>
+                                                <option value="OUTRO">Outro</option>
+                                            </select>
+
+                                            <input type="text"
+                                                   name="observacoes"
+                                                   class="form-control form-control-sm mb-2"
+                                                   maxlength="255"
+                                                   placeholder="Observações (opcional)">
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-primary">
+                                                Registrar
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-success">Quitada</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    Nenhuma parcela cadastrada.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <a href="{% url 'financeiro:contas_receber' %}"
+       class="btn btn-outline-secondary mt-3">
+        Voltar às contas a receber
+    </a>
+</div>
+{% endblock %}
