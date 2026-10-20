@@ -12,6 +12,9 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="text-muted">Total de cobranças</h5>
+                        <a href="{% url 'financeiro:contas_receber' %}" class="btn btn-outline-primary mt-2">
+                            Ver contas a receber
+                        </a>
                     <h3>R$ {{ total_contas|floatformat:2 }}</h3>
                     <p class="mb-0">Valores cadastrados para receber dos pacientes.</p>
                 </div>
