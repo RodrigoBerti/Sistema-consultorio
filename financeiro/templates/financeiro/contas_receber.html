@@ -13,13 +13,8 @@
             </p>
         </div>
 
-        <a href="{% url 'financeiro:criar_conta_receber' %}"
-           class="btn btn-primary">
-            + Nova cobrança
-        </a>
-        <a href="{% url 'financeiro:detalhe_conta_receber' conta.id %}"
-            class="btn btn-sm btn-outline-primary">
-            Ver detalhes
+        <a href="{% url 'financeiro:criar_conta_receber' %}" class="btn btn-primary">
+                Nova cobrança
         </a>
     </div>
 
@@ -56,6 +51,9 @@
                                 <td>
                                     R$ {{ conta.valor_total|floatformat:2 }}
                                 </td>
+                                 <a href="{% url 'financeiro:detalhe_conta_receber' conta.pk %}" class="btn btn-sm btn-outline-primary">
+                                    Ver detalhes
+                                </a>
                                 <td>
                                     R$ {{ conta.total_recebido|floatformat:2 }}
                                 </td>
