@@ -39,4 +39,8 @@ urlpatterns = [
         views.registrar_recebimento,
         name='registrar_recebimento'
     ),
+    path('contas-receber/nova/',
+        views.criar_conta_receber,
+        name='criar_conta_receber'
+    ),
 ]

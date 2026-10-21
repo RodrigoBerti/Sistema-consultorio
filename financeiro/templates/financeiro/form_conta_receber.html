@@ -1,92 +1,56 @@
 
 {% extends 'base.html' %}
 
-{% block title %}Contas a Receber | Consultório{% endblock %}
+{% block title %}{{ titulo }} | Consultório{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2>Contas a receber</h2>
-            <p class="text-muted mb-0">
-                Cobranças vinculadas aos pacientes.
-            </p>
-        </div>
-
-        <a href="{% url 'financeiro:criar_conta_receber' %}"
-           class="btn btn-primary">
-            + Nova cobrança
-        </a>
-    </div>
-
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+    <h2 class="mb-4">{{ titulo }}</h2>
 
     <div class="card shadow-sm">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Paciente</th>
-                            <th>Descrição</th>
-                            <th>Tipo</th>
-                            <th>Valor total</th>
-                            <th>Recebido</th>
-                            <th>Saldo devedor</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
+            <form method="post">
+                {% csrf_token %}
 
-                    <tbody>
-                        {% for conta in contas %}
-                            <tr>
-                                <td>{{ conta.paciente.nome }}</td>
-                                <td>{{ conta.descricao }}</td>
-                                <td>{{ conta.get_tipo_display }}</td>
-                                <td>
-                                    R$ {{ conta.valor_total|floatformat:2 }}
-                                </td>
-                                <td>
-                                    R$ {{ conta.total_recebido|floatformat:2 }}
-                                </td>
-                                <td>
-                                    R$ {{ conta.saldo_devedor|floatformat:2 }}
-                                </td>
-                                <td>
-                                    {% if not conta.parcelas.exists %}
-                                        <a href="{% url 'financeiro:editar_conta_receber' conta.id %}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            Editar
-                                        </a>
-                                    {% else %}
-                                        <span class="text-muted">
-                                            Parcelas cadastradas
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    Nenhuma conta a receber cadastrada.
-                                </td>
-                            </tr>
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}"
+                               class="form-label">
+                            {{ field.label }}
+                        </label>
+
+                        {{ field }}
+
+                        {% if field.help_text %}
+                            <div class="form-text">
+                                {{ field.help_text }}
+                            </div>
+                        {% endif %}
+
+                        {% for error in field.errors %}
+                            <div class="text-danger small">
+                                {{ error }}
+                            </div>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary">
+                    Salvar cobrança
+                </button>
+
+                <a href="{% url 'financeiro:contas_receber' %}"
+                   class="btn btn-outline-secondary">
+                    Cancelar
+                </a>
+            </form>
         </div>
     </div>
-
-    <a href="{% url 'financeiro:painel' %}"
-       class="btn btn-outline-secondary mt-3">
-        Voltar ao financeiro
-    </a>
 </div>
 {% endblock %}
