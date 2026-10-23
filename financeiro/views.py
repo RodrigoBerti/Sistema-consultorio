@@ -4,8 +4,22 @@ from django.db.models import Sum
 from django.db.models import DecimalField
 from django.db.models.functions import Coalesce
 
-from .models import ContaReceber, Despesa
-from .forms import ContaReceberForm
+from .models import (
+    ContaReceber,
+    Despesa,
+    PagamentoDespesa,
+    ParcelaReceber,
+    Recebimento,
+)
+
+from .forms import (
+    ContaReceberForm,
+    DespesaForm,
+    PagamentoDespesaForm,
+    GerarParcelasForm,
+    RecebimentoForm,
+)
+
 from decimal import Decimal, ROUND_HALF_UP
 from calendar import monthrange
 from datetime import date
@@ -267,3 +281,103 @@ def registrar_recebimento(request, parcela_id):
         'financeiro:detalhe_conta_receber',
         conta_id=parcela.conta_id
     )
+
+
+def listar_contas_pagar(request):
+    despesas = Despesa.objects.prefetch_related(
+        'pagamentos'
+    ).all().order_by('data_vencimento', 'descricao')
+
+    hoje = timezone.localdate()
+
+    for despesa in despesas:
+        if despesa.saldo_devedor <= 0:
+            despesa.situacao = 'Paga'
+        elif despesa.total_pago > 0:
+            despesa.situacao = 'Parcial'
+        elif despesa.data_vencimento < hoje:
+            despesa.situacao = 'Vencida'
+        else:
+            despesa.situacao = 'Pendente'
+
+    return render(
+        request,
+        'financeiro/contas_pagar.html',
+        {
+            'despesas': despesas,
+            'hoje': hoje,
+        }
+    )
+
+
+def criar_despesa(request):
+    if request.method == 'POST':
+        form = DespesaForm(request.POST)
+
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request,
+                'Despesa cadastrada com sucesso!'
+            )
+            return redirect('financeiro:contas_pagar')
+    else:
+        form = DespesaForm()
+
+    return render(
+        request,
+        'financeiro/form_despesa.html',
+        {
+            'form': form,
+            'titulo': 'Nova conta a pagar',
+        }
+    )
+
+
+def registrar_pagamento_despesa(request, despesa_id):
+    if request.method != 'POST':
+        return redirect('financeiro:contas_pagar')
+
+    with transaction.atomic():
+        despesa = get_object_or_404(
+            Despesa.objects.select_for_update(),
+            pk=despesa_id
+        )
+
+        form = PagamentoDespesaForm(request.POST)
+
+        if form.is_valid():
+            total_pago = despesa.pagamentos.aggregate(
+                total=Sum('valor')
+            )['total'] or Decimal('0.00')
+
+            saldo = despesa.valor - total_pago
+            valor_pagamento = form.cleaned_data['valor']
+
+            if saldo <= 0:
+                messages.error(
+                    request,
+                    'Esta despesa já está totalmente paga.'
+                )
+            elif valor_pagamento > saldo:
+                messages.error(
+                    request,
+                    f'O pagamento ultrapassa o saldo pendente '
+                    f'(R$ {saldo:.2f}).'
+                )
+            else:
+                pagamento = form.save(commit=False)
+                pagamento.despesa = despesa
+                pagamento.save()
+
+                messages.success(
+                    request,
+                    'Pagamento registrado com sucesso!'
+                )
+        else:
+            messages.error(
+                request,
+                'Confira os dados informados para o pagamento.'
+            )
+
+    return redirect('financeiro:contas_pagar')
