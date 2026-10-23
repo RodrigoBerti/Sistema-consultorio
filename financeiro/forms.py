@@ -2,7 +2,7 @@
 from django import forms
 from .models import ContaReceber
 from decimal import Decimal
-
+from .models import Despesa, PagamentoDespesa
 from .models import ContaReceber, ParcelaReceber, Recebimento
 
 class ContaReceberForm(forms.ModelForm):
@@ -98,5 +98,73 @@ class RecebimentoForm(forms.ModelForm):
             'observacoes': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'Observações opcionais',
+            }),
+        }
+
+class DespesaForm(forms.ModelForm):
+    class Meta:
+        model = Despesa
+        fields = [
+            'descricao',
+            'categoria',
+            'fornecedor',
+            'valor',
+            'data_vencimento',
+            'recorrente',
+            'observacoes',
+        ]
+        widgets = {
+            'descricao': forms.TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'categoria': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'fornecedor': forms.TextInput(attrs={
+                'class': 'form-control',
+            }),
+            'valor': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0.01',
+                'step': '0.01',
+            }),
+            'data_vencimento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'recorrente': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+            }),
+            'observacoes': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+            }),
+        }
+
+
+class PagamentoDespesaForm(forms.ModelForm):
+    class Meta:
+        model = PagamentoDespesa
+        fields = [
+            'valor',
+            'data_pagamento',
+            'forma_pagamento',
+            'observacoes',
+        ]
+        widgets = {
+            'valor': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': '0.01',
+                'step': '0.01',
+            }),
+            'data_pagamento': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+            }),
+            'forma_pagamento': forms.Select(attrs={
+                'class': 'form-select',
+            }),
+            'observacoes': forms.TextInput(attrs={
+                'class': 'form-control',
             }),
         }
