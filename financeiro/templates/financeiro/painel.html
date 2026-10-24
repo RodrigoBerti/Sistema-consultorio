@@ -12,11 +12,12 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="text-muted">Total de cobranças</h5>
-                        <a href="{% url 'financeiro:contas_receber' %}" class="btn btn-outline-primary mt-2">
-                            Ver contas a receber
-                        </a>
+                        
                     <h3>R$ {{ total_contas|floatformat:2 }}</h3>
                     <p class="mb-0">Valores cadastrados para receber dos pacientes.</p>
+                    <a href="{% url 'financeiro:contas_receber' %}" class="btn btn-outline-primary mt-2">
+                        Ver contas a receber
+                    </a>
                 </div>
             </div>
         </div>
@@ -25,8 +26,23 @@
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="text-muted">Total de despesas</h5>
+
                     <h3>R$ {{ total_despesas|floatformat:2 }}</h3>
-                    <p class="mb-0">Despesas cadastradas do consultório.</p>
+
+                    <p class="mb-3">
+                        Despesas cadastradas do consultório.
+                    </p>
+
+                    <a href="{% url 'financeiro:contas_pagar' %}"
+                    class="btn btn-outline-primary me-2">
+                        Ver contas a pagar
+                    </a>
+
+                    <a href="{% url 'financeiro:criar_despesa' %}"
+                    class="btn btn-primary mt-2">
+                        <i class="bi bi-plus-circle"></i>
+                        Nova despesa
+                    </a>
                 </div>
             </div>
         </div>

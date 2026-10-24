@@ -43,4 +43,19 @@ urlpatterns = [
         views.criar_conta_receber,
         name='criar_conta_receber'
     ),
+     path(
+        'contas-pagar/',
+        views.listar_contas_pagar,
+        name='contas_pagar'
+    ),
+    path(
+        'contas-pagar/nova/',
+        views.criar_despesa,
+        name='criar_despesa'
+    ),
+    path(
+        'contas-pagar/<int:despesa_id>/pagamento/',
+        views.registrar_pagamento_despesa,
+        name='registrar_pagamento_despesa'
+    ),
 ]
