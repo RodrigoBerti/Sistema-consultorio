@@ -40,6 +40,7 @@ INSTALLED_APPS = [
         # Aplicações do sistema
     'pacientes',
     'financeiro',
+    'agenda',
 ]
 
 MIDDLEWARE = [

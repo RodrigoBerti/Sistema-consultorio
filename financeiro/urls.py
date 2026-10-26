@@ -13,6 +13,11 @@ urlpatterns = [
         name='dashboard'
     ),
     path(
+        'relatorios/fluxo-caixa/',
+        views.relatorio_fluxo_caixa,
+        name='relatorio_fluxo_caixa'
+    ),
+    path(
         'contas-receber/',
         views.listar_contas_receber,
         name='contas_receber'
