@@ -29,7 +29,7 @@ from django.db import transaction
 from django.contrib import messages
 from django.utils import timezone
 
-from .models import ContaReceber, ParcelaReceber, Recebimento
+from .models import ContaReceber, ParcelaReceber, Recebimento, PagamentoDespesa
 from .forms import GerarParcelasForm, RecebimentoForm
 
 def inicio_financeiro(request):
@@ -523,3 +523,97 @@ def registrar_pagamento_despesa(request, despesa_id):
             )
 
     return redirect('financeiro:contas_pagar')
+
+
+def relatorio_fluxo_caixa(request):
+    hoje = timezone.localdate()
+
+    # Período padrão: mês atual.
+    inicio_padrao = hoje.replace(day=1)
+    fim_padrao = hoje.replace(
+        day=monthrange(hoje.year, hoje.month)[1]
+    )
+
+    inicio = parse_date(request.GET.get('inicio', '')) or inicio_padrao
+    fim = parse_date(request.GET.get('fim', '')) or fim_padrao
+
+    if inicio > fim:
+        inicio, fim = fim, inicio
+
+    # Buscar recebimentos efetivamente registrados.
+    recebimentos = Recebimento.objects.filter(
+        data_recebimento__range=(inicio, fim)
+    ).select_related(
+        'parcela__conta__paciente'
+    ).order_by('data_recebimento', 'id')
+
+    # Buscar pagamentos efetivamente realizados.
+    pagamentos = PagamentoDespesa.objects.filter(
+        data_pagamento__range=(inicio, fim)
+    ).select_related(
+        'despesa'
+    ).order_by('data_pagamento', 'id')
+
+    movimentacoes = []
+
+    for recebimento in recebimentos:
+        movimentacoes.append({
+            'data': recebimento.data_recebimento,
+            'tipo': 'Entrada',
+            'descricao': (
+                f'{recebimento.parcela.conta.descricao} - '
+                f'{recebimento.parcela.conta.paciente.nome}'
+            ),
+            'categoria': 'Recebimento de paciente',
+            'forma_pagamento': recebimento.get_forma_pagamento_display(),
+            'entrada': recebimento.valor,
+            'saida': Decimal('0.00'),
+        })
+
+    for pagamento in pagamentos:
+        movimentacoes.append({
+            'data': pagamento.data_pagamento,
+            'tipo': 'Saída',
+            'descricao': pagamento.despesa.descricao,
+            'categoria': pagamento.despesa.get_categoria_display(),
+            'forma_pagamento': pagamento.get_forma_pagamento_display(),
+            'entrada': Decimal('0.00'),
+            'saida': pagamento.valor,
+        })
+
+    # Ordenar todas as movimentações por data.
+    movimentacoes.sort(
+        key=lambda item: (item['data'], item['tipo'])
+    )
+
+    total_entradas = sum(
+        (item['entrada'] for item in movimentacoes),
+        Decimal('0.00')
+    )
+
+    total_saidas = sum(
+        (item['saida'] for item in movimentacoes),
+        Decimal('0.00')
+    )
+
+    saldo_periodo = total_entradas - total_saidas
+
+    # Saldo acumulado considerando as movimentações do período.
+    saldo_acumulado = Decimal('0.00')
+
+    for item in movimentacoes:
+        saldo_acumulado += item['entrada'] - item['saida']
+        item['saldo_acumulado'] = saldo_acumulado
+
+    return render(
+        request,
+        'financeiro/relatorio_fluxo_caixa.html',
+        {
+            'inicio': inicio,
+            'fim': fim,
+            'movimentacoes': movimentacoes,
+            'total_entradas': total_entradas,
+            'total_saidas': total_saidas,
+            'saldo_periodo': saldo_periodo,
+        }
+    )

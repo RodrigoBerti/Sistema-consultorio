@@ -1,0 +1,188 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Fluxo de Caixa | Consultório{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center
+                flex-wrap gap-2 mb-4">
+        <h2>Relatório de Fluxo de Caixa</h2>
+
+        <a href="{% url 'financeiro:painel' %}"
+           class="btn btn-outline-secondary">
+            Voltar ao financeiro
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="inicio" class="form-label">
+                        Data inicial
+                    </label>
+                    <input type="date" id="inicio" name="inicio"
+                           class="form-control"
+                           value="{{ inicio|date:'Y-m-d' }}" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="fim" class="form-label">
+                        Data final
+                    </label>
+                    <input type="date" id="fim" name="fim"
+                           class="form-control"
+                           value="{{ fim|date:'Y-m-d' }}" required>
+                </div>
+
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        Filtrar
+                    </button>
+
+                    <a href="{% url 'financeiro:relatorio_fluxo_caixa' %}"
+                       class="btn btn-outline-secondary">
+                        Mês atual
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body">
+                    <h6 class="text-muted">Total de entradas</h6>
+                    <h3 class="text-success">
+                        R$ {{ total_entradas|floatformat:2 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100 border-danger">
+                <div class="card-body">
+                    <h6 class="text-muted">Total de saídas</h6>
+                    <h3 class="text-danger">
+                        R$ {{ total_saidas|floatformat:2 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Saldo do período</h6>
+                    <h3 class="{% if saldo_periodo < 0 %}text-danger{% else %}text-success{% endif %}">
+                        R$ {{ saldo_periodo|floatformat:2 }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movimentações -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Movimentações financeiras</h5>
+
+            <p class="text-muted">
+                Período de {{ inicio|date:'d/m/Y' }}
+                até {{ fim|date:'d/m/Y' }}.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Descrição</th>
+                            <th>Categoria</th>
+                            <th>Forma de pagamento</th>
+                            <th>Entrada</th>
+                            <th>Saída</th>
+                            <th>Saldo acumulado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in movimentacoes %}
+                            <tr>
+                                <td>{{ item.data|date:'d/m/Y' }}</td>
+
+                                <td>
+                                    {% if item.tipo == 'Entrada' %}
+                                        <span class="badge bg-success">
+                                            Entrada
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            Saída
+                                        </span>
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ item.descricao }}</td>
+                                <td>{{ item.categoria }}</td>
+                                <td>{{ item.forma_pagamento }}</td>
+
+                                <td class="text-success">
+                                    {% if item.entrada %}
+                                        R$ {{ item.entrada|floatformat:2 }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td class="text-danger">
+                                    {% if item.saida %}
+                                        R$ {{ item.saida|floatformat:2 }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    R$ {{ item.saldo_acumulado|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="8"
+                                    class="text-center text-muted py-4">
+                                    Nenhuma movimentação encontrada
+                                    neste período.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+
+                    <tfoot>
+                        <tr class="table-light">
+                            <th colspan="5">Totais do período</th>
+                            <th class="text-success">
+                                R$ {{ total_entradas|floatformat:2 }}
+                            </th>
+                            <th class="text-danger">
+                                R$ {{ total_saidas|floatformat:2 }}
+                            </th>
+                            <th>
+                                R$ {{ saldo_periodo|floatformat:2 }}
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
