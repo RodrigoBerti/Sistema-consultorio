@@ -3,6 +3,7 @@ from django.shortcuts import render,redirect, get_object_or_404
 from django.db.models import Sum
 from django.db.models import DecimalField
 from django.db.models.functions import Coalesce
+from django.utils.dateparse import parse_date
 
 from .models import (
     ContaReceber,
@@ -31,6 +32,11 @@ from django.utils import timezone
 from .models import ContaReceber, ParcelaReceber, Recebimento
 from .forms import GerarParcelasForm, RecebimentoForm
 
+def inicio_financeiro(request):
+    return render(
+        request,
+        'financeiro/inicio_financeiro.html'
+    )
 
 def painel_financeiro(request):
     total_contas = ContaReceber.objects.aggregate(
@@ -57,6 +63,142 @@ def painel_financeiro(request):
             'total_despesas': total_despesas,
         }
     )
+
+    
+def painel_financeiro(request):
+    hoje = timezone.localdate()
+
+    # Define o período padrão: mês atual.
+    inicio_padrao = hoje.replace(day=1)
+    fim_padrao = hoje.replace(
+        day=monthrange(hoje.year, hoje.month)[1]
+    )
+
+    inicio = parse_date(request.GET.get('inicio', '')) or inicio_padrao
+    fim = parse_date(request.GET.get('fim', '')) or fim_padrao
+
+    if inicio > fim:
+        inicio, fim = fim, inicio
+
+    campo_decimal = DecimalField(
+        max_digits=14,
+        decimal_places=2
+    )
+
+    zero = Decimal('0.00')
+
+    # Valores recebidos dentro do período selecionado.
+    total_recebido = Recebimento.objects.filter(
+        data_recebimento__range=(inicio, fim)
+    ).aggregate(
+        total=Coalesce(
+            Sum('valor'),
+            zero,
+            output_field=campo_decimal
+        )
+    )['total']
+
+    # Despesas efetivamente pagas dentro do período.
+    total_pago = PagamentoDespesa.objects.filter(
+        data_pagamento__range=(inicio, fim)
+    ).aggregate(
+        total=Coalesce(
+            Sum('valor'),
+            zero,
+            output_field=campo_decimal
+        )
+    )['total']
+
+    # Total contratado nas contas a receber.
+    total_contas = ContaReceber.objects.aggregate(
+        total=Coalesce(
+            Sum('valor_total'),
+            zero,
+            output_field=campo_decimal
+        )
+    )['total']
+
+    # Total recebido em todas as datas.
+    recebimentos_gerais = Recebimento.objects.aggregate(
+        total=Coalesce(
+            Sum('valor'),
+            zero,
+            output_field=campo_decimal
+        )
+    )['total']
+
+    total_a_receber = total_contas - recebimentos_gerais
+
+    # Total de despesas cadastradas.
+    total_despesas = Despesa.objects.aggregate(
+        total=Coalesce(
+            Sum('valor'),
+            zero,
+            output_field=campo_decimal
+        )
+    )['total']
+
+    # Total pago em todas as datas.
+    pagamentos_gerais = PagamentoDespesa.objects.aggregate(
+        total=Coalesce(
+            Sum('valor'),
+            zero,
+            output_field=campo_decimal
+        )
+    )['total']
+
+    total_a_pagar = total_despesas - pagamentos_gerais
+
+    # Resultado das movimentações do período.
+    resultado_periodo = total_recebido - total_pago
+
+    # Quantidade de contas vencidas e ainda não quitadas.
+    contas_receber_vencidas = 0
+
+    for conta in ContaReceber.objects.prefetch_related(
+        'parcelas__recebimentos'
+    ):
+        for parcela in conta.parcelas.all():
+            recebido_parcela = sum(
+                (r.valor for r in parcela.recebimentos.all()),
+                zero
+            )
+
+            if (
+                parcela.data_vencimento < hoje
+                and recebido_parcela < parcela.valor
+            ):
+                contas_receber_vencidas += 1
+
+    despesas_vencidas = 0
+
+    for despesa in Despesa.objects.prefetch_related('pagamentos'):
+        if (
+            despesa.data_vencimento < hoje
+            and despesa.saldo_devedor > 0
+        ):
+            despesas_vencidas += 1
+
+    return render(
+        request,
+        'financeiro/painel.html',
+        {
+            'inicio': inicio,
+            'fim': fim,
+            'total_recebido': total_recebido,
+            'total_pago': total_pago,
+            'total_a_receber': total_a_receber,
+            'total_a_pagar': total_a_pagar,
+            'resultado_periodo': resultado_periodo,
+            'total_contas': total_contas,
+            'total_despesas': total_despesas,
+            'contas_receber_vencidas': contas_receber_vencidas,
+            'despesas_vencidas': despesas_vencidas,
+        }
+    )
+
+
+  
 
 def listar_contas_receber(request):
     contas = ContaReceber.objects.select_related(

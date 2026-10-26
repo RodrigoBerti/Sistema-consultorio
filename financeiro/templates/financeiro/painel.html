@@ -1,22 +1,155 @@
 
 {% extends 'base.html' %}
 
-{% block title %}Financeiro | Consultório{% endblock %}
+{% block title %}Dashboard Financeiro | Consultório{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <h2 class="mb-4">Financeiro</h2>
 
+    <div class="d-flex justify-content-between align-items-center
+                flex-wrap gap-2 mb-4">
+        <h2>Dashboard Financeiro</h2>
+
+        <a href="{% url 'financeiro:contas_receber' %}"
+           class="btn btn-outline-primary">
+            Contas a receber
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Filtro de período -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="inicio" class="form-label">
+                        Data inicial
+                    </label>
+                    <input type="date" id="inicio" name="inicio"
+                           class="form-control"
+                           value="{{ inicio|date:'Y-m-d' }}" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="fim" class="form-label">
+                        Data final
+                    </label>
+                    <input type="date" id="fim" name="fim"
+                           class="form-control"
+                           value="{{ fim|date:'Y-m-d' }}" required>
+                </div>
+
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        Filtrar período
+                    </button>
+                    <a href="{% url 'financeiro:painel' %}"
+                       class="btn btn-outline-secondary">
+                        Mês atual
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body">
+                    <h6 class="text-muted">Recebido no período</h6>
+                    <h3 class="text-success">
+                        R$ {{ total_recebido|floatformat:2 }}
+                    </h3>
+                    <small>Pagamentos recebidos nas datas selecionadas.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100 border-danger">
+                <div class="card-body">
+                    <h6 class="text-muted">Despesas pagas no período</h6>
+                    <h3 class="text-danger">
+                        R$ {{ total_pago|floatformat:2 }}
+                    </h3>
+                    <small>Pagamentos realizados nas datas selecionadas.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total a receber</h6>
+                    <h3>R$ {{ total_a_receber|floatformat:2 }}</h3>
+                    <small>
+                        {{ contas_receber_vencidas }} parcelas vencidas.
+                    </small>
+                    <div class="mt-3">
+                        <a href="{% url 'financeiro:contas_receber' %}"
+                           class="btn btn-sm btn-outline-primary">
+                            Consultar cobranças
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-xl-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted">Total a pagar</h6>
+                    <h3>R$ {{ total_a_pagar|floatformat:2 }}</h3>
+                    <small>
+                        {{ despesas_vencidas }} despesas vencidas.
+                    </small>
+                    <div class="mt-3">
+                        <a href="{% url 'financeiro:contas_pagar' %}"
+                           class="btn btn-sm btn-outline-primary">
+                            Consultar despesas
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Resultado do período -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5>Resultado financeiro do período</h5>
+
+            <h2 class="{% if resultado_periodo < 0 %}text-danger{% else %}text-success{% endif %}">
+                R$ {{ resultado_periodo|floatformat:2 }}
+            </h2>
+
+            <p class="text-muted mb-0">
+                Recebimentos menos pagamentos realizados entre
+                {{ inicio|date:'d/m/Y' }} e {{ fim|date:'d/m/Y' }}.
+            </p>
+        </div>
+    </div>
+
+    <!-- Atalhos -->
     <div class="row g-3">
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="text-muted">Total de cobranças</h5>
-                        
-                    <h3>R$ {{ total_contas|floatformat:2 }}</h3>
-                    <p class="mb-0">Valores cadastrados para receber dos pacientes.</p>
-                    <a href="{% url 'financeiro:contas_receber' %}" class="btn btn-outline-primary mt-2">
-                        Ver contas a receber
+                    <h5>Contas a receber</h5>
+                    <p>Cadastre cobranças e acompanhe as parcelas dos pacientes.</p>
+                    <a href="{% url 'financeiro:criar_conta_receber' %}"
+                       class="btn btn-primary">
+                        Nova cobrança
                     </a>
                 </div>
             </div>
@@ -25,22 +158,10 @@
         <div class="col-md-6">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="text-muted">Total de despesas</h5>
-
-                    <h3>R$ {{ total_despesas|floatformat:2 }}</h3>
-
-                    <p class="mb-3">
-                        Despesas cadastradas do consultório.
-                    </p>
-
-                    <a href="{% url 'financeiro:contas_pagar' %}"
-                    class="btn btn-outline-primary me-2">
-                        Ver contas a pagar
-                    </a>
-
+                    <h5>Contas a pagar</h5>
+                    <p>Cadastre despesas e controle os pagamentos do consultório.</p>
                     <a href="{% url 'financeiro:criar_despesa' %}"
-                    class="btn btn-primary mt-2">
-                        <i class="bi bi-plus-circle"></i>
+                       class="btn btn-primary">
                         Nova despesa
                     </a>
                 </div>
