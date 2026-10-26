@@ -1,0 +1,66 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Financeiro | Consultório{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Financeiro</h2>
+
+    <p class="text-muted mb-4">
+        Gerencie as cobranças dos pacientes e as despesas do consultório.
+    </p>
+
+    <div class="row g-4">
+        <!-- Contas a receber -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h4>Contas a receber</h4>
+                    <p class="text-muted">
+                        Cadastre cobranças, gere parcelas e acompanhe
+                        os pagamentos dos pacientes.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <a href="{% url 'financeiro:criar_conta_receber' %}"
+                           class="btn btn-primary">
+                            Nova cobrança
+                        </a>
+
+                        <a href="{% url 'financeiro:contas_receber' %}"
+                           class="btn btn-outline-primary">
+                            Ver contas a receber
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contas a pagar -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h4>Contas a pagar</h4>
+                    <p class="text-muted">
+                        Cadastre despesas, registre pagamentos e
+                        acompanhe os valores pendentes.
+                    </p>
+
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        <a href="{% url 'financeiro:criar_despesa' %}"
+                           class="btn btn-primary">
+                            Nova despesa
+                        </a>
+
+                        <a href="{% url 'financeiro:contas_pagar' %}"
+                           class="btn btn-outline-primary">
+                            Ver contas a pagar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

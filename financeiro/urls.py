@@ -5,8 +5,13 @@ from . import views
 app_name = 'financeiro'
 
 urlpatterns = [
-    path('', views.painel_financeiro, name='painel'),
+    path('', views.inicio_financeiro, name='painel'),
 
+    path(
+        'dashboard/',
+        views.painel_financeiro,
+        name='dashboard'
+    ),
     path(
         'contas-receber/',
         views.listar_contas_receber,
