@@ -1,14 +1,332 @@
 
 {% extends 'base.html' %}
 
-{% block title %}Agenda | Consultório{% endblock %}
+{% block title %}Agenda de Consultas | Clínica{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <h2>Agenda de consultas</h2>
+<style>
+    .agenda-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
 
-    <p class="text-muted">
-        Aqui ficará a agenda semanal do consultório.
+    .agenda-scroll {
+        overflow-x: auto;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
+
+    .agenda-layout {
+        display: grid;
+        grid-template-columns: 64px repeat(7, minmax(135px, 1fr));
+        min-width: 1050px;
+    }
+
+    .agenda-day-header {
+        min-height: 75px;
+        padding: 10px 5px;
+        text-align: center;
+        border-bottom: 1px solid #dee2e6;
+        border-left: 1px solid #dee2e6;
+        background: #f8fafc;
+    }
+
+    .agenda-day-header.today {
+        background: #e7f1ff;
+        color: #0d6efd;
+    }
+
+    .agenda-time-header {
+        border-bottom: 1px solid #dee2e6;
+        background: #f8fafc;
+    }
+
+    .agenda-time-labels {
+        position: relative;
+        height: 660px;
+        background: #fff;
+    }
+
+    .agenda-time-label {
+        position: absolute;
+        right: 8px;
+        transform: translateY(-50%);
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .agenda-day-column {
+        position: relative;
+        height: 660px;
+        border-left: 1px solid #dee2e6;
+        background-image: repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 59px,
+            #e9ecef 59px,
+            #e9ecef 60px
+        );
+    }
+
+    /* 1. O bloco principal do evento na agenda */
+    .agenda-event {
+        position: absolute;
+        left: 3px;
+        right: 3px;
+        padding: 4px 6px;
+        border-radius: 5px;
+        border-left: 3px solid rgba(0, 0, 0, 0.18);
+        overflow: hidden; /* Corta qualquer coisa que vaze */
+        font-size: 12px;
+        line-height: 1.3;
+        color: #17212b;
+        z-index: 2;
+        cursor: pointer;
+        box-sizing: border-box;
+        background-color: #b3d7ff;
+        
+        /* ADICIONE ISTO: Se o seu card usa altura automática baseada no horário, 
+        isso garante um comportamento limpo, ou você pode limitar se necessário */
+        max-height: 100%; 
+    }
+
+    /* 2. Ocultar informações extras (procedimento, status) de dentro do card compacto da grade */
+    .agenda-event .event-details {
+        display: none; /* Mantém oculto na grade e vira pop-up no hover */
+    }
+
+    /* Se você tiver classes separadas dentro do card para procedimento/status que aparecem na grade, 
+    adicione regras para escondê-las no card normal, por exemplo: */
+    .agenda-event .event-summary,
+    .agenda-event .event-status {
+        display: none; /* Esconde na grade compacta para mostrar apenas o horário e o nome (strong) */
+    }
+
+    /* 3. Efeito ao passar o mouse no card principal */
+    .agenda-event:hover {
+        z-index: 30;
+        overflow: visible;
+        filter: brightness(0.97);
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 4. Textos internos permitidos no card compacto (ex: Apenas Horário e Nome) */
+    .agenda-event strong {
+        display: block;
+        margin: 2px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .agenda-event .event-time {
+        display: block;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+
+    /* 5. O Pop-up de Detalhes Flutuante (Exibe tudo perfeitamente ao passar o mouse) */
+    .agenda-event:hover .event-details {
+        display: block;
+        position: absolute;
+        top: 0;
+        left: calc(100% + 8px);
+        width: 240px;
+        padding: 12px;
+        background: #fff;
+        color: #212529;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 5px 18px rgba(0, 0, 0, 0.18);
+        white-space: normal;
+        font-size: 13px;
+        line-height: 1.5;
+        z-index: 9999;
+    }
+
+    /* Estilização interna do pop-up para garantir que lá dentro apareça tudo normal */
+    .agenda-event .event-details strong {
+        display: block;
+        margin: 0 0 6px;
+        font-size: 15px;
+        white-space: normal;
+        text-overflow: clip;
+    }
+
+    .agenda-event .event-details .event-summary,
+    .agenda-event .event-details .event-status {
+        display: block; /* Garante que no pop-up os detalhes apareçam */
+    }
+
+    /* 6. Responsividade para celulares */
+    @media (max-width: 768px) {
+        .agenda-event .event-details {
+            position: fixed;
+            top: 30%;
+            left: 10%;
+            width: 80%;
+        }
+    }
+
+
+</style>
+
+<div class="container-fluid">
+
+    <div class="agenda-toolbar">
+        <div>
+            <h2 class="mb-1">Agenda de consultas</h2>
+            <div class="text-muted">
+                {{ inicio_semana|date:'d/m/Y' }}
+                até {{ fim_semana|date:'d/m/Y' }}
+            </div>
+        </div>
+
+        <a href="{% url 'agenda:nova_consulta' %}?data={{ hoje|date:'Y-m-d' }}"
+           class="btn btn-primary">
+            + Nova consulta
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-success">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div class="btn-group">
+            <a class="btn btn-outline-secondary"
+               href="{% url 'agenda:calendario' %}?data={{ semana_anterior|date:'Y-m-d' }}">
+                &larr; Semana anterior
+            </a>
+
+            <a class="btn btn-outline-primary"
+               href="{% url 'agenda:calendario' %}">
+                Hoje
+            </a>
+
+            <a class="btn btn-outline-secondary"
+               href="{% url 'agenda:calendario' %}?data={{ proxima_semana|date:'Y-m-d' }}">
+                Próxima semana &rarr;
+            </a>
+        </div>
+
+        <div class="small text-muted">
+            <span class="badge" style="background:#a9def9;color:#17212b">Agendada</span>
+            <span class="badge" style="background:#80cbc4;color:#17212b">Confirmada</span>
+            <span class="badge" style="background:#b7e4c7;color:#17212b">Concluída</span>
+            <span class="badge" style="background:#e0e0e0;color:#17212b">Cancelada</span>
+            <span class="badge" style="background:#f4a6a6;color:#17212b">Faltou</span>
+        </div>
+    </div>
+
+    <div class="agenda-scroll">
+        <div class="agenda-layout">
+
+            <div class="agenda-time-header"></div>
+
+            {% for dia in dias %}
+                <div class="agenda-day-header {% if dia.data == hoje %}today{% endif %}">
+                    <div class="fw-semibold">{{ dia.nome }}</div>
+                    <div>{{ dia.data|date:'d/m' }}</div>
+                    {% if dia.data == hoje %}
+                        <span class="badge bg-primary mt-1">Hoje</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <div class="agenda-time-labels">
+                {% for horario in horarios %}
+                    <div class="agenda-time-label"
+                        style="top: {{ horario.topo }}px;">
+                        {{ horario.hora|time:'H:i' }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% for dia in dias %}
+                <div class="agenda-day-column">
+                    {% for item in dia.consultas %}
+                        <div class="agenda-event"
+                             style="top: {{ item.topo }}px; height: {{ item.altura }}px; background-color: {{ item.cor }};"
+                             title="{{ item.objeto.paciente.nome }} - {{ item.objeto.procedimento }}">
+
+                            <span class="event-time">
+                                {{ item.objeto.hora_inicio|time:'H:i' }}
+                                – {{ item.objeto.hora_fim|time:'H:i' }}
+                            </span>
+
+                            <strong>{{ item.objeto.paciente.nome }}</strong>
+
+                            {{ item.objeto.procedimento }}
+
+                            <div>{{ item.objeto.get_status_display }}</div>
+                            
+                            <span class="event-time">
+                                {{ item.objeto.hora_inicio|time:'H:i' }}
+                                – {{ item.objeto.hora_fim|time:'H:i' }}
+                            </span>
+
+                            <strong>{{ item.objeto.paciente.nome }}</strong>
+
+                            <div class="event-summary">
+                                {{ item.objeto.procedimento }}
+                            </div>
+
+                            <div class="event-summary">
+                                {{ item.objeto.get_status_display }}
+                            </div>
+
+                            <div class="event-details">
+                                <strong>{{ item.objeto.paciente.nome }}</strong>
+
+                                <div>
+                                    <b>Procedimento:</b>
+                                    {{ item.objeto.procedimento }}
+                                </div>
+
+                                <div>
+                                    <b>Data:</b>
+                                    {{ item.objeto.data|date:'d/m/Y' }}
+                                </div>
+
+                                <div>
+                                    <b>Horário:</b>
+                                    {{ item.objeto.hora_inicio|time:'H:i' }}
+                                    às {{ item.objeto.hora_fim|time:'H:i' }}
+                                </div>
+
+                                <div>
+                                    <b>Status:</b>
+                                    {{ item.objeto.get_status_display }}
+                                </div>
+
+                                {% if item.objeto.observacoes %}
+                                    <div>
+                                        <b>Observações:</b>
+                                        {{ item.objeto.observacoes }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+
+        </div>
+    </div>
+
+    <p class="text-muted small mt-3">
+        A agenda exibe o horário das 08h às 18h.
+        Para consultar outros horários, poderemos ampliar a grade.
     </p>
+
 </div>
 {% endblock %}
