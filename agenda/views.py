@@ -179,3 +179,18 @@ def alterar_status(request, consulta_id):
     )
 
     return redirect('agenda:calendario')
+
+
+@require_POST
+def excluir_consulta(request, consulta_id):
+    consulta = get_object_or_404(Consulta, pk=consulta_id)
+
+    nome_paciente = consulta.paciente.nome
+    consulta.delete()
+
+    messages.success(
+        request,
+        f'Agendamento de {nome_paciente} excluído com sucesso!'
+    )
+
+    return redirect('agenda:calendario')

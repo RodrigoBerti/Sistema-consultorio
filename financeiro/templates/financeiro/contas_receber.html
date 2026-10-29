@@ -79,6 +79,40 @@
                                     Nenhuma conta a receber cadastrada.
                                 </td>
                             </tr>
+                            <td>
+                                <a href="{% url 'financeiro:detalhe_conta_receber' conta.pk %}"
+                                class="btn btn-sm btn-outline-primary">
+                                    Ver detalhes
+                                </a>
+
+                                {% if conta.total_recebido == 0 %}
+                                    <form method="post"
+                                        action="{% url 'financeiro:excluir_conta_receber' conta.pk %}"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Tem certeza que deseja excluir esta cobrança?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            Excluir
+                                        </button>
+                                    </form>
+
+                                {% elif conta.saldo_devedor == 0 %}
+                                    <form method="post"
+                                        action="{% url 'financeiro:estornar_conta_receber' conta.pk %}"
+                                        class="d-inline"
+                                        onsubmit="return confirm('Confirma o estorno dos recebimentos desta cobrança?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            Estornar recebimentos
+                                        </button>
+                                    </form>
+
+                                {% else %}
+                                    <span class="badge text-bg-warning">
+                                        Pagamento parcial
+                                    </span>
+                                {% endif %}
+                            </td>
                         {% endfor %}
                     </tbody>
                 </table>
