@@ -4,6 +4,7 @@ from django.db.models import Sum
 from django.db.models import DecimalField
 from django.db.models.functions import Coalesce
 from django.utils.dateparse import parse_date
+from django.views.decorators.http import require_POST
 
 from .models import (
     ContaReceber,
@@ -617,3 +618,79 @@ def relatorio_fluxo_caixa(request):
             'saldo_periodo': saldo_periodo,
         }
     )
+
+@require_POST
+def excluir_conta_receber(request, conta_id):
+    with transaction.atomic():
+        conta = get_object_or_404(
+            ContaReceber.objects.select_for_update(),
+            pk=conta_id,
+        )
+
+        # Não excluir se existir qualquer recebimento no histórico.
+        possui_recebimentos = Recebimento.objects.filter(
+            parcela__conta=conta
+        ).exists()
+
+        if possui_recebimentos:
+            messages.error(
+                request,
+                'Esta cobrança possui histórico de recebimentos. '
+                'Não é possível excluí-la.'
+            )
+        else:
+            conta.delete()
+            messages.success(
+                request,
+                'Cobrança excluída com sucesso.'
+            )
+
+    return redirect('financeiro:contas_receber')
+
+
+@require_POST
+def estornar_conta_receber(request, conta_id):
+    with transaction.atomic():
+        conta = get_object_or_404(
+            ContaReceber.objects.select_for_update(),
+            pk=conta_id,
+        )
+
+        recebimentos = Recebimento.objects.filter(
+            parcela__conta=conta,
+            estornado=False,
+        )
+
+        total_recebido = sum(
+            recebimento.valor
+            for recebimento in recebimentos
+        )
+
+        if total_recebido <= 0:
+            messages.error(
+                request,
+                'Não existem recebimentos ativos para estornar.'
+            )
+
+        elif conta.saldo_devedor > 0:
+            messages.error(
+                request,
+                'Esta cobrança ainda não está quitada. '
+                'O estorno integral está disponível somente '
+                'para cobranças quitadas.'
+            )
+
+        else:
+            recebimentos.update(
+                estornado=True,
+                data_estorno=timezone.localdate(),
+                motivo_estorno='Estorno da cobrança',
+            )
+
+            messages.success(
+                request,
+                'Recebimentos estornados com sucesso. '
+                'O histórico foi preservado.'
+            )
+
+    return redirect('financeiro:contas_receber')

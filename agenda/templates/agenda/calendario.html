@@ -316,6 +316,16 @@
                                         Salvar status
                                     </button>
                                 </form>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger btn-sm w-100 mt-2"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#confirmarExclusaoModal"
+                                    data-delete-url="{% url 'agenda:excluir_consulta' consulta_id=item.objeto.pk %}"
+                                    data-paciente="{{ item.objeto.paciente.nome|escape }}">
+                                    Excluir agendamento
+                                </button>
                               
                             </div>
 
@@ -363,10 +373,58 @@
                         });
                     }
                 });
+
+                const modalExclusao = document.getElementById('confirmarExclusaoModal');
+                const formExclusao = document.getElementById('formExcluirConsulta');
+                const nomePacienteExclusao = document.getElementById('nomePacienteExclusao');
+
+                if (modalExclusao && formExclusao) {
+                    modalExclusao.addEventListener('show.bs.modal', function (event) {
+                        const botao = event.relatedTarget;
+                        if (!botao) return;
+
+                        formExclusao.action = botao.getAttribute('data-delete-url');
+                        nomePacienteExclusao.textContent = botao.getAttribute('data-paciente') || 'este paciente';
+                    });
+                }
             });
             </script>
             {% endblock %}
                 
+        </div>
+    </div>
+
+
+    <!-- Confirmação de exclusão de agendamento -->
+    <div class="modal fade" id="confirmarExclusaoModal" tabindex="-1"
+         aria-labelledby="confirmarExclusaoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="formExcluirConsulta" method="post">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmarExclusaoLabel">
+                            Excluir agendamento?
+                        </h5>
+                        <button type="button" class="btn-close"
+                                data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        Tem certeza de que deseja excluir o agendamento de
+                        <strong id="nomePacienteExclusao"></strong>?
+                        <p class="text-danger small mb-0 mt-2">
+                            Essa ação não poderá ser desfeita.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary"
+                                data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">
+                            Sim, excluir agendamento
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 

@@ -105,4 +105,4 @@ class Consulta(models.Model):
         )
 
         return redirect('agenda:calendario')
-
+    

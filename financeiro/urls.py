@@ -68,4 +68,14 @@ urlpatterns = [
         views.registrar_pagamento_despesa,
         name='registrar_pagamento_despesa'
     ),
+    path(
+        'contas-receber/<int:conta_id>/excluir/',
+        views.excluir_conta_receber,
+        name='excluir_conta_receber',
+    ),
+    path(
+        'contas-receber/<int:conta_id>/estornar/',
+        views.estornar_conta_receber,
+        name='estornar_conta_receber',
+    ),
 ]

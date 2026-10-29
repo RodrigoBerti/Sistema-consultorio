@@ -11,4 +11,9 @@ urlpatterns = [
         views.alterar_status,
         name='alterar_status',
     ),
+    path(
+        'consulta/<int:consulta_id>/excluir/',
+        views.excluir_consulta,
+        name='excluir_consulta',
+    ),
 ]

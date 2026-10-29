@@ -37,11 +37,10 @@ class ContaReceber(models.Model):
 
     @property
     def total_recebido(self):
-        total = sum(
+        return sum(
             parcela.total_recebido
             for parcela in self.parcelas.all()
         )
-        return total
 
     @property
     def saldo_devedor(self):
@@ -89,6 +88,11 @@ class ParcelaReceber(models.Model):
 
 
 class Recebimento(models.Model):
+
+    estornado = models.BooleanField(default=False)
+    data_estorno = models.DateField(null=True, blank=True)
+    motivo_estorno = models.CharField(max_length=255, blank=True)
+
     class FormaPagamento(models.TextChoices):
         DINHEIRO = 'DINHEIRO', 'Dinheiro'
         PIX = 'PIX', 'PIX'
