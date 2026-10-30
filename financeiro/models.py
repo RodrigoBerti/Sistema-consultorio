@@ -2,6 +2,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from pacientes.models import Paciente
+from decimal import Decimal
+from django.db.models import Sum
 
 
 class ContaReceber(models.Model):
@@ -38,8 +40,8 @@ class ContaReceber(models.Model):
     @property
     def total_recebido(self):
         return sum(
-            parcela.total_recebido
-            for parcela in self.parcelas.all()
+            (parcela.total_recebido for parcela in self.parcelas.all()),
+            Decimal('0.00')
         )
 
     @property
@@ -77,10 +79,11 @@ class ParcelaReceber(models.Model):
 
     @property
     def total_recebido(self):
-        return sum(
-            recebimento.valor
-            for recebimento in self.recebimentos.all()
-        )
+        return self.recebimentos.filter(
+            estornado=False
+        ).aggregate(
+            total=Sum('valor')
+        )['total'] or Decimal('0.00')
 
     @property
     def saldo_devedor(self):

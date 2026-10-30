@@ -46,79 +46,84 @@
                         {% for conta in contas %}
                             <tr>
                                 <td>{{ conta.paciente.nome }}</td>
+
                                 <td>{{ conta.descricao }}</td>
+
                                 <td>{{ conta.get_tipo_display }}</td>
+
                                 <td>
                                     R$ {{ conta.valor_total|floatformat:2 }}
                                 </td>
-                                 <a href="{% url 'financeiro:detalhe_conta_receber' conta.pk %}" class="btn btn-sm btn-outline-primary">
-                                    Ver detalhes
-                                </a>
+
                                 <td>
                                     R$ {{ conta.total_recebido|floatformat:2 }}
                                 </td>
+
                                 <td>
                                     R$ {{ conta.saldo_devedor|floatformat:2 }}
                                 </td>
+
                                 <td>
+                                    <a href="{% url 'financeiro:detalhe_conta_receber' conta.pk %}"
+                                    class="btn btn-sm btn-outline-primary mb-1">
+                                        Ver detalhes
+                                    </a>
+
                                     {% if not conta.parcelas.exists %}
-                                        <a href="{% url 'financeiro:editar_conta_receber' conta.id %}"
-                                           class="btn btn-sm btn-outline-primary">
+                                        <a href="{% url 'financeiro:editar_conta_receber' conta.pk %}"
+                                        class="btn btn-sm btn-outline-secondary mb-1">
                                             Editar
                                         </a>
+                                    {% endif %}
+
+                                    {% if conta.total_recebido == 0 %}
+                                        <form method="post"
+                                            action="{% url 'financeiro:excluir_conta_receber' conta.pk %}"
+                                            class="d-inline"
+                                            onsubmit="return confirm('Tem certeza que deseja excluir esta cobrança?');">
+                                            {% csrf_token %}
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-danger mb-1">
+                                                Excluir
+                                            </button>
+                                        </form>
+
+                                    {% elif conta.saldo_devedor == 0 %}
+                                        <form method="post"
+                                            action="{% url 'financeiro:estornar_conta_receber' conta.pk %}"
+                                            class="d-inline"
+                                            onsubmit="return confirm('Confirma o estorno dos recebimentos desta cobrança?');">
+                                            {% csrf_token %}
+
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-warning mb-1">
+                                                Estornar
+                                            </button>
+                                        </form>
+
                                     {% else %}
-                                        <span class="text-muted">
-                                            Parcelas cadastradas
+                                        <span class="badge text-bg-warning">
+                                            Pagamento parcial
                                         </span>
                                     {% endif %}
                                 </td>
                             </tr>
+
                         {% empty %}
                             <tr>
                                 <td colspan="7" class="text-center text-muted py-4">
                                     Nenhuma conta a receber cadastrada.
                                 </td>
                             </tr>
-                            <td>
-                                <a href="{% url 'financeiro:detalhe_conta_receber' conta.pk %}"
-                                class="btn btn-sm btn-outline-primary">
-                                    Ver detalhes
-                                </a>
-
-                                {% if conta.total_recebido == 0 %}
-                                    <form method="post"
-                                        action="{% url 'financeiro:excluir_conta_receber' conta.pk %}"
-                                        class="d-inline"
-                                        onsubmit="return confirm('Tem certeza que deseja excluir esta cobrança?');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            Excluir
-                                        </button>
-                                    </form>
-
-                                {% elif conta.saldo_devedor == 0 %}
-                                    <form method="post"
-                                        action="{% url 'financeiro:estornar_conta_receber' conta.pk %}"
-                                        class="d-inline"
-                                        onsubmit="return confirm('Confirma o estorno dos recebimentos desta cobrança?');">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-warning">
-                                            Estornar recebimentos
-                                        </button>
-                                    </form>
-
-                                {% else %}
-                                    <span class="badge text-bg-warning">
-                                        Pagamento parcial
-                                    </span>
-                                {% endif %}
-                            </td>
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+
+
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
 
     <a href="{% url 'financeiro:painel' %}"
        class="btn btn-outline-secondary mt-3">

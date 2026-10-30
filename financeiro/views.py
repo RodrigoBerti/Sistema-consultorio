@@ -387,7 +387,9 @@ def registrar_recebimento(request, parcela_id):
         if form.is_valid():
             # Calcula o saldo dentro da transação para validar
             # o pagamento contra os recebimentos já registrados.
-            total_recebido = parcela.recebimentos.aggregate(
+            total_recebido = parcela.recebimentos.filter(
+                estornado=False
+            ).aggregate(
                 total=Sum('valor')
             )['total'] or Decimal('0.00')
 
