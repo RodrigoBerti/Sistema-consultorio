@@ -78,4 +78,15 @@ urlpatterns = [
         views.estornar_conta_receber,
         name='estornar_conta_receber',
     ),
+    path(
+        'contas-pagar/<int:despesa_id>/excluir/',
+        views.excluir_despesa,
+        name='excluir_despesa'
+    ),
+
+    path(
+        'contas-pagar/<int:despesa_id>/estornar/',
+        views.estornar_despesa,
+        name='estornar_despesa'
+    ),
 ]

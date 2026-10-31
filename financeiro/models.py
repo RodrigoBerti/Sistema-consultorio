@@ -162,8 +162,11 @@ class Despesa(models.Model):
     @property
     def total_pago(self):
         return sum(
-            pagamento.valor
-            for pagamento in self.pagamentos.all()
+            (
+                pagamento.valor
+                for pagamento in self.pagamentos.filter(estornado=False)
+            ),
+            Decimal('0.00')
         )
 
     @property
@@ -205,3 +208,7 @@ class PagamentoDespesa(models.Model):
 
     def __str__(self):
         return f'{self.despesa.descricao} - R$ {self.valor}'
+    
+    estornado = models.BooleanField(default=False)
+    data_estorno = models.DateField(null=True, blank=True)
+    motivo_estorno = models.CharField(max_length=255, blank=True)

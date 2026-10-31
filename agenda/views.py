@@ -52,11 +52,21 @@ def calendario(request):
     minutos_exibidos = 11 * 60
     pixels_por_hora = 60
 
+    # Horários da grade: 08h até 18h
+    horarios = [
+        {
+            'hora': time(hora, 0),
+            'topo': (hora - 8) * 60,
+        }
+        for hora in range(8, 19)
+    ]
+
     for consulta in consultas:
         minutos_inicio = (
             consulta.hora_inicio.hour * 60
             + consulta.hora_inicio.minute
         )
+
         minutos_base = (
             inicio_exibicao.hour * 60
             + inicio_exibicao.minute
@@ -71,7 +81,6 @@ def calendario(request):
             * pixels_por_hora / 60
         )
 
-        # A grade visual começa às 08h e termina às 18h.
         if topo + altura <= 0 or topo >= minutos_exibidos:
             continue
 
@@ -96,14 +105,6 @@ def calendario(request):
                 Consulta.Status.FALTOU: '#f4a6a6',
             }.get(consulta.status, '#a9def9'),
         })
-
-        horarios = [
-            {
-                'hora': time(hora, 0),
-                'topo': (hora - 8) * 60,
-            }
-            for hora in range(8, 19)
-        ]
 
     return render(
         request,

@@ -5,6 +5,10 @@ from django.db.models import DecimalField
 from django.db.models.functions import Coalesce
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
+from django.db import transaction
+from django.contrib import messages
+from django.utils import timezone
+from decimal import Decimal
 
 from .models import (
     ContaReceber,
@@ -451,6 +455,7 @@ def listar_contas_pagar(request):
         {
             'despesas': despesas,
             'hoje': hoje,
+            'formas_pagamento': PagamentoDespesa.FormaPagamento.choices,
         }
     )
 
@@ -492,7 +497,7 @@ def registrar_pagamento_despesa(request, despesa_id):
         form = PagamentoDespesaForm(request.POST)
 
         if form.is_valid():
-            total_pago = despesa.pagamentos.aggregate(
+            total_pago = despesa.pagamentos.filter(estornado=False).aggregate(
                 total=Sum('valor')
             )['total'] or Decimal('0.00')
 
@@ -690,9 +695,75 @@ def estornar_conta_receber(request, conta_id):
             )
 
             messages.success(
-                request,
+                request,total_pago,
                 'Recebimentos estornados com sucesso. '
                 'O histórico foi preservado.'
             )
 
     return redirect('financeiro:contas_receber')
+
+@require_POST
+def excluir_despesa(request, despesa_id):
+    with transaction.atomic():
+        despesa = get_object_or_404(
+            Despesa.objects.select_for_update(),
+            pk=despesa_id
+        )
+
+        if despesa.pagamentos.exists():
+            messages.error(
+                request,
+                'Não é possível excluir esta despesa, '
+                'pois ela possui histórico de pagamentos.'
+            )
+        else:
+            despesa.delete()
+
+            messages.success(
+                request,
+                'Despesa excluída com sucesso!'
+            )
+
+    return redirect('financeiro:contas_pagar')
+
+@require_POST
+def estornar_despesa(request, despesa_id):
+    with transaction.atomic():
+        despesa = get_object_or_404(
+            Despesa.objects.select_for_update(),
+            pk=despesa_id
+        )
+
+        pagamentos = despesa.pagamentos.filter(
+            estornado=False
+        )
+
+        total_pago = pagamentos.aggregate(
+            total=Sum('valor')
+        )['total'] or Decimal('0.00')
+
+        if total_pago <= 0:
+            messages.error(
+                request,
+                'Esta despesa não possui pagamentos para estornar.'
+            )
+
+        elif despesa.saldo_devedor > 0:
+            messages.error(
+                request,
+                'Somente despesas totalmente pagas podem ser estornadas.'
+            )
+
+        else:
+            pagamentos.update(
+                estornado=True,
+                data_estorno=timezone.localdate(),
+                motivo_estorno='Estorno da despesa'
+            )
+
+            messages.success(
+                request,
+                'Pagamentos estornados com sucesso!'
+            )
+
+    return redirect('financeiro:contas_pagar')

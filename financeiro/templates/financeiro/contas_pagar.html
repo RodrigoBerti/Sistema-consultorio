@@ -43,6 +43,7 @@
                             <th>Saldo pendente</th>
                             <th>Situação</th>
                             <th>Registrar pagamento</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
 
@@ -133,7 +134,7 @@
                                                     <option value="">
                                                         Forma de pagamento
                                                     </option>
-                                                    {% for valor, rotulo in despesa.pagamentos.model.FORMA_PAGAMENTO_CHOICES %}
+                                                    {% for valor, rotulo in formas_pagamento %}
                                                         <option value="{{ valor }}">
                                                             {{ rotulo }}
                                                         </option>
@@ -159,6 +160,35 @@
                                         </span>
                                     {% endif %}
                                 </td>
+                                <td>
+                                {% if despesa.total_pago == 0 %}
+                                    <form method="post"
+                                        action="{% url 'financeiro:excluir_despesa' despesa.pk %}"
+                                        onsubmit="return confirm('Tem certeza que deseja excluir esta despesa?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i>
+                                            Excluir
+                                        </button>
+                                    </form>
+
+                                {% elif despesa.saldo_devedor <= 0 %}
+                                    <form method="post"
+                                        action="{% url 'financeiro:estornar_despesa' despesa.pk %}"
+                                        onsubmit="return confirm('Deseja realmente estornar os pagamentos desta despesa?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                            Estornar
+                                        </button>
+                                    </form>
+
+                                {% else %}
+                                    <span class="text-muted">
+                                        Pagamento parcial
+                                    </span>
+                                {% endif %}
+                            </td>
                             </tr>
                         {% empty %}
                             <tr>
