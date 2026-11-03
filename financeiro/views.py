@@ -533,6 +533,7 @@ def registrar_pagamento_despesa(request, despesa_id):
     return redirect('financeiro:contas_pagar')
 
 
+
 def relatorio_fluxo_caixa(request):
     hoje = timezone.localdate()
 
@@ -548,21 +549,17 @@ def relatorio_fluxo_caixa(request):
     if inicio > fim:
         inicio, fim = fim, inicio
 
-    # Buscar recebimentos efetivamente registrados.
+    movimentacoes = []
+
+    # ==========================================
+    # RECEBIMENTOS
+    # ==========================================
+
     recebimentos = Recebimento.objects.filter(
         data_recebimento__range=(inicio, fim)
     ).select_related(
         'parcela__conta__paciente'
     ).order_by('data_recebimento', 'id')
-
-    # Buscar pagamentos efetivamente realizados.
-    pagamentos = PagamentoDespesa.objects.filter(
-        data_pagamento__range=(inicio, fim)
-    ).select_related(
-        'despesa'
-    ).order_by('data_pagamento', 'id')
-
-    movimentacoes = []
 
     for recebimento in recebimentos:
         movimentacoes.append({
@@ -578,9 +575,42 @@ def relatorio_fluxo_caixa(request):
             'saida': Decimal('0.00'),
         })
 
+    # Estornos de recebimentos: representam uma saída.
+    estornos_recebimentos = Recebimento.objects.filter(
+        estornado=True,
+        data_estorno__range=(inicio, fim)
+    ).select_related(
+        'parcela__conta__paciente'
+    )
+
+    for recebimento in estornos_recebimentos:
+        movimentacoes.append({
+            'data': recebimento.data_estorno,
+            'tipo': 'Saída',
+            'descricao': (
+                f'Estorno: {recebimento.parcela.conta.descricao} - '
+                f'{recebimento.parcela.conta.paciente.nome}'
+            ),
+            'categoria': 'Estorno de recebimento',
+            'forma_pagamento': recebimento.get_forma_pagamento_display(),
+            'entrada': Decimal('0.00'),
+            'saida': recebimento.valor,
+        })
+
+    # ==========================================
+    # PAGAMENTOS DE DESPESAS
+    # ==========================================
+
+    pagamentos = PagamentoDespesa.objects.filter(
+        data_pagamento__range=(inicio, fim)
+    ).select_related(
+        'despesa'
+    ).order_by('data_pagamento', 'id')
+
     for pagamento in pagamentos:
         movimentacoes.append({
             'data': pagamento.data_pagamento,
+            'ordem': 1,
             'tipo': 'Saída',
             'descricao': pagamento.despesa.descricao,
             'categoria': pagamento.despesa.get_categoria_display(),
@@ -589,9 +619,35 @@ def relatorio_fluxo_caixa(request):
             'saida': pagamento.valor,
         })
 
-    # Ordenar todas as movimentações por data.
+    # Estornos de pagamentos: representam uma entrada.
+    estornos_pagamentos = PagamentoDespesa.objects.filter(
+        estornado=True,
+        data_estorno__range=(inicio, fim)
+    ).select_related(
+        'despesa'
+    )
+
+    for pagamento in estornos_pagamentos:
+        movimentacoes.append({
+            'data': pagamento.data_estorno,
+            'ordem': 2,
+            'tipo': 'Entrada',
+            'descricao': f'Estorno: {pagamento.despesa.descricao}',
+            'categoria': 'Estorno de pagamento',
+            'forma_pagamento': pagamento.get_forma_pagamento_display(),
+            'entrada': pagamento.valor,
+            'saida': Decimal('0.00'),
+        })
+
+    # ==========================================
+    # CÁLCULOS DO FLUXO DE CAIXA
+    # ==========================================
+
     movimentacoes.sort(
-        key=lambda item: (item['data'], item['tipo'])
+        key=lambda item: (
+            item['data'],
+            item.get('ordem', 1)
+        )
     )
 
     total_entradas = sum(
@@ -606,7 +662,7 @@ def relatorio_fluxo_caixa(request):
 
     saldo_periodo = total_entradas - total_saidas
 
-    # Saldo acumulado considerando as movimentações do período.
+    # Saldo acumulado dentro do período.
     saldo_acumulado = Decimal('0.00')
 
     for item in movimentacoes:
@@ -625,6 +681,7 @@ def relatorio_fluxo_caixa(request):
             'saldo_periodo': saldo_periodo,
         }
     )
+
 
 @require_POST
 def excluir_conta_receber(request, conta_id):
