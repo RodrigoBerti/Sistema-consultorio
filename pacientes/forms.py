@@ -10,6 +10,10 @@ class PacienteForm(forms.ModelForm):
             'nome',
             'cpf',
             'data_nascimento',
+            'nacionalidade',
+            'estado_civil',
+            'profissao',
+            'rg',
             'telefone',
             'email',
             'endereco',
@@ -50,6 +54,29 @@ class PacienteForm(forms.ModelForm):
             'ativo': forms.CheckboxInput(attrs={
                 'class': 'form-check-input',
             }),
+            'nacionalidade': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ex.: Brasileira',
+            }),
+            'estado_civil': forms.Select(
+                choices=[
+                    ('', 'Selecione'),
+                    ('solteiro', 'Solteiro(a)'),
+                    ('casado', 'Casado(a)'),
+                    ('divorciado', 'Divorciado(a)'),
+                    ('viuvo', 'Viúvo(a)'),
+                    ('uniao_estavel', 'União estável'),
+                ],
+                attrs={'class': 'form-select'}
+            ),
+            'profissao': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Profissão do paciente',
+            }),
+            'rg': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Número do RG',
+            }),
         }
 
     def clean_cpf(self):
@@ -62,3 +89,4 @@ class PacienteForm(forms.ModelForm):
             )
 
         return f'{cpf[:3]}.{cpf[3:6]}.{cpf[6:9]}-{cpf[9:]}'
+
